@@ -59,8 +59,10 @@ void Queue::pushBack(int n)
     if (isFull()) 
     {
         // std::cout << "realloc\n" << std::endl;
+        // перевыделение памяти
         int* newArr = new int[capacity * 2];
         
+        // копирование в новый массив
         for (int i = 0; i < size; i++) 
         {
             newArr[i] = arr[(front + i) % capacity];
