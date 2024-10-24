@@ -19,13 +19,13 @@ class Queue
         bool isEmpty();
 };
 
-Queue::Queue(int size) 
+Queue::Queue(int new_size) 
 {
-    capacity = size;
+    capacity = new_size;
     arr = new int[capacity];
     front = 0;
     rear = 0;
-    this->size = 0;
+    size = 0;
 }
 
 Queue::~Queue() 
