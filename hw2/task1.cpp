@@ -1,130 +1,160 @@
 #include <iostream>
 #include <string>
 #define RESIZE_PERCENTAGE 0.75
-#define DELETED "<DELETED>"
-
-long long calc_hash(const std::string &s, long long p, long long size)
-{
-    long long h = 0;
-    for (char c : s)
-    {
-        h = (h * p + c) % size;
-    }
-    return h;
-}
+#define DEL "DEL"
 
 class HashMap
 {
 private:
-    long long capacity;
     long long length;
+    long long capacity;
     std::string *arr;
     long long p;
 
-    long long find_slot(const std::string &str, bool for_insertion)
+    long long calc_hash(const std::string &s, long long p, long long size)
     {
-        long long hash = calc_hash(str, p, capacity);
-        long long i = 0;
-
-        while (i < capacity)
+        long long h = 0;
+        for (char c : s)
         {
-            long long index = (hash + i * i) % capacity;
+            h = (h * p + c) % size;
+        }
+        return h;
+    }
 
-            if (arr[index].empty() || arr[index] == DELETED)
-            {
-                if (for_insertion)
-                    return index;
-                if (arr[index].empty())
-                    return -1;
-            }
+    // поиск для вставки
+    long long find_index_insert(std::string *array, long long size, const std::string &key)
+    {
+        long long hash = calc_hash(key, p, size);
+        long long i = 0;
+        long long probe = hash;
 
-            if (arr[index] == str)
-                return index;
+        while (i < size)
+        {
+            probe = (probe + i) % size;
+
+            if (array[probe].empty() || array[probe] == DEL)
+                return probe;
+
             i++;
         }
 
         return -1;
     }
 
-    void resize()
+    // обычный поиск
+    long long find_index(const std::string &key)
     {
-        long long old_capacity = capacity;
-        long long new_length = 0;
-        capacity *= 2;
-        std::string *new_arr = new std::string[capacity];
+        long long hash = calc_hash(key, p, capacity);
+        long long i = 0;
+        long long probe = hash;
 
-        for (long long i = 0; i < old_capacity; i++)
+        while (i < capacity)
         {
-            if (!arr[i].empty() && arr[i] != DELETED)
-            {
-                long long new_index = calc_hash(arr[i], p, capacity);
-                long long probe = 0;
+            probe = (probe + i) % capacity;
 
-                while (!new_arr[(new_index + probe * probe) % capacity].empty())
-                {
-                    probe++;
-                }
-                new_arr[(new_index + probe * probe) % capacity] = arr[i];
-                new_length++;
+            if (arr[probe] == key)
+            {
+                return probe;
+            }
+
+            if (arr[probe].empty())
+            {
+                return -1;
+            }
+
+            if (arr[probe] == DEL)
+            {
+                i++;
+                continue;
+            }
+
+            i++;
+        }
+
+        return -1;
+    }
+
+    void grow(void)
+    {
+        // создаём массив, который в конце увеличения заменит исходный
+        long long new_capacity = capacity * 2;
+        std::string *tmp = new std::string[new_capacity];
+        for (long long i = 0; i < new_capacity; i++)
+            tmp[i] = "";
+        // std::cout << "RESIZE" << std::endl;
+
+        // пробегаемся по всему прошлому массиву и копируем непустые значение
+        for (long long i = 0; i < capacity; i++)
+        {
+            if (!arr[i].empty() && arr[i] != DEL)
+            {
+                tmp[find_index_insert(tmp, new_capacity, arr[i])] = arr[i];
             }
         }
 
         delete[] arr;
-        length = new_length;
-        arr = new_arr;
+
+        arr = tmp;
+
+        capacity = new_capacity;
     }
 
 public:
-    HashMap()
+    HashMap(long long new_capacity = 8)
     {
-        capacity = 8;
         length = 0;
+        capacity = new_capacity;
         arr = new std::string[capacity];
+        for (long long i = 0; i < capacity; i++)
+            arr[i] = "";
         p = 2337537353;
     }
 
-    ~HashMap()
+    ~HashMap(void)
     {
         delete[] arr;
-        arr = nullptr;
     }
 
-    int Add(const std::string &str)
+    bool Has(std::string key)
     {
-        if (Has(str))
-            return 1;
+        return find_index(key) != -1;
+    }
+
+    int Add(std::string key)
+    {
+        if (Has(key))
+            return -1;
 
         if ((double)(length + 1) / capacity >= RESIZE_PERCENTAGE)
-        {
-            // std::cout << "resize" << std::endl;
-            resize();
-        }
+            grow();
 
-        long long index = find_slot(str, true);
-        if (index != -1)
-        {
-            arr[index] = str;
-            length++;
-            return 0;
-        }
-        return 1;
-    }
+        arr[find_index_insert(arr, capacity, key)] = key;
 
-    bool Has(const std::string &str)
-    {
-        return find_slot(str, false) != -1;
-    }
+        length++;
 
-    int Delete(const std::string &str)
-    {
-        long long index = find_slot(str, false);
-
-        if (index == -1)
-            return 1;
-        arr[index] = DELETED;
-        length--;
         return 0;
     }
+
+    int Delete(std::string key)
+    {
+        if (!Has(key))
+            return -1;
+
+        arr[find_index(key)] = DEL;
+        length--;
+
+        return 0;
+    }
+
+    // для служебного использования:)
+    // void Print(void)
+    // {
+    //     std::cout << "LEN: " << length << std::endl;
+    //     for (long long i = 0; i < capacity; i++)
+    //     {
+    //         std::cout << arr[i] << " at " << i << std::endl;
+    //     }
+    // }
 };
 
 int main(void)
@@ -153,6 +183,9 @@ int main(void)
             res = map.Delete(key);
             std::cout << (res ? "FAIL" : "OK") << std::endl;
             break;
+        // case 'p':
+        //     map.Print();
+        //     break;
         default:
             break;
         }
