@@ -208,10 +208,6 @@ int main(void)
 
     vector<vector<int>> levels = tree.level_order_traversal();
 
-    int height = levels.size();
-
-    cout << height << "\n";
-
     for (const auto &level : levels)
     {
         for (size_t i = 0; i < level.size(); ++i)
